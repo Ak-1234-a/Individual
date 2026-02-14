@@ -14,10 +14,27 @@ import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import com.example.freelancer.Profile
 import com.example.freelancer.R
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.core.app.ActivityCompat
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
+import android.Manifest
+import androidx.core.content.ContextCompat
+import androidx.core.content.ContextCompat.getSystemService
+import android.app.Notification
+
+
 
 
 
 class MainActivity : AppCompatActivity() {
+    private val CHANNEL_ID = "notification_channel"
+    private val NOTIFICATION_ID = 1
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -31,7 +48,55 @@ class MainActivity : AppCompatActivity() {
         btnWork.setOnClickListener{
             showAlertDialog();
         }
+        createNotificationChannel()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            if (ActivityCompat.checkSelfPermission(this,
+                    Manifest.permission.POST_NOTIFICATIONS) !=
+                PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this,
+                    arrayOf(Manifest.permission.POST_NOTIFICATIONS), 1)
+            }
+        }
 
+    }
+
+    private fun showNotification() {
+        val intent = Intent(this, MainActivity::class.java)
+        val pendingIntent = PendingIntent.getActivity(
+            this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT or
+                    PendingIntent.FLAG_IMMUTABLE
+        )
+        val notification = NotificationCompat.Builder(this, CHANNEL_ID)
+            .setSmallIcon(android.R.drawable.ic_dialog_alert)
+                .setContentTitle("Notification")
+            .setContentText("You have save the project.")
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true)
+            .build()
+        if (ActivityCompat.checkSelfPermission(this,
+                Manifest.permission.POST_NOTIFICATIONS) !=
+            PackageManager.PERMISSION_GRANTED) {
+            return
+        }
+        NotificationManagerCompat.from(this).notify(NOTIFICATION_ID,
+            notification)
+    }
+
+    private fun createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val name = "Notification Channel"
+            val descriptionText = "Channel for status notifications"
+            val importance = NotificationManager.IMPORTANCE_HIGH
+            val channel = NotificationChannel(CHANNEL_ID, name,
+                importance).apply {
+                description = descriptionText
+            }
+            val notificationManager: NotificationManager =
+                getSystemService(Context.NOTIFICATION_SERVICE) as
+                        NotificationManager
+            notificationManager.createNotificationChannel(channel)
+        }
     }
 
     private fun showAlertDialog(){
@@ -69,6 +134,7 @@ class MainActivity : AppCompatActivity() {
 
             R.id.save -> {
                 Toast.makeText(this, "Project Saved", Toast.LENGTH_SHORT).show()
+                showNotification()
                 true
             }
 
