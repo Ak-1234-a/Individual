@@ -11,6 +11,10 @@ import android.view.ContextMenu
 import android.view.View
 import android.widget.Button
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
+import com.example.freelancer.Profile
+import com.example.freelancer.R
+
 
 
 class MainActivity : AppCompatActivity() {
@@ -24,9 +28,24 @@ class MainActivity : AppCompatActivity() {
 
         val btnWork = findViewById<Button>(R.id.btnWork)
         registerForContextMenu(btnWork)
+        btnWork.setOnClickListener{
+            showAlertDialog();
+        }
 
     }
 
+    private fun showAlertDialog(){
+        val builder = AlertDialog.Builder(this)
+        builder.setTitle("Alert")
+        builder.setMessage("Are you sure you want to apply?")
+        builder.setPositiveButton("Yes"){dialog,_->
+            dialog.dismiss()
+        }
+        builder.setNegativeButton("No"){dialog,_->
+            dialog.dismiss()
+        }
+        builder.show()
+    }
     override fun onCreateContextMenu(
         menu: ContextMenu?,
         v: View?,
