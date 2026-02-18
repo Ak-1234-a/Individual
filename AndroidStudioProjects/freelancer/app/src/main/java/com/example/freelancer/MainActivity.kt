@@ -1,40 +1,34 @@
 package com.example.freelancer
 
-import android.content.Intent
-import android.os.Bundle
-import android.view.Menu
-import android.view.MenuItem
-import androidx.activity.enableEdgeToEdge
-import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.widget.Toolbar
-import android.view.ContextMenu
-import android.view.View
-import android.widget.Button
-import android.widget.Toast
-import androidx.appcompat.app.AlertDialog
-import com.example.freelancer.Profile
-import com.example.freelancer.R
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.app.PendingIntent
+import android.Manifest
+import android.app.*
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
+import android.os.Bundle
+import android.view.*
+import android.widget.Button
+import android.widget.Toast
+import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.Toolbar
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
-import android.Manifest
-import androidx.core.content.ContextCompat
-import androidx.core.content.ContextCompat.getSystemService
-import android.app.Notification
-
-
-
-
+import java.util.*
 
 class MainActivity : AppCompatActivity() {
+
     private val CHANNEL_ID = "notification_channel"
     private val NOTIFICATION_ID = 1
+
+    private var fromDate = ""
+    private var fromTime = ""
+    private var toDate = ""
+    private var toTime = ""
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -45,72 +39,168 @@ class MainActivity : AppCompatActivity() {
 
         val btnWork = findViewById<Button>(R.id.btnWork)
         registerForContextMenu(btnWork)
-        btnWork.setOnClickListener{
-            showAlertDialog();
-        }
-        createNotificationChannel()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            if (ActivityCompat.checkSelfPermission(this,
-                    Manifest.permission.POST_NOTIFICATIONS) !=
-                PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(this,
-                    arrayOf(Manifest.permission.POST_NOTIFICATIONS), 1)
-            }
+
+        btnWork.setOnClickListener {
+            pickFromDate()
         }
 
+        createNotificationChannel()
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ActivityCompat.checkSelfPermission(
+                    this,
+                    Manifest.permission.POST_NOTIFICATIONS
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                ActivityCompat.requestPermissions(
+                    this,
+                    arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                    1
+                )
+            }
+        }
     }
+
+    // ---------------- FROM DATE ----------------
+
+    private fun pickFromDate() {
+        val calendar = Calendar.getInstance()
+
+        val dialog = DatePickerDialog(
+            this,
+            { _, year, month, day ->
+                fromDate = "$day/${month + 1}/$year"
+                pickFromTime()
+            },
+            calendar.get(Calendar.YEAR),
+            calendar.get(Calendar.MONTH),
+            calendar.get(Calendar.DAY_OF_MONTH)
+        )
+        dialog.show()
+    }
+
+    // ---------------- FROM TIME ----------------
+
+    private fun pickFromTime() {
+        val calendar = Calendar.getInstance()
+
+        val dialog = TimePickerDialog(
+            this,
+            { _, hour, minute ->
+                fromTime = String.format("%02d:%02d", hour, minute)
+                pickToDate()
+            },
+            calendar.get(Calendar.HOUR_OF_DAY),
+            calendar.get(Calendar.MINUTE),
+            true
+        )
+        dialog.show()
+    }
+
+    // ---------------- TO DATE ----------------
+
+    private fun pickToDate() {
+        val calendar = Calendar.getInstance()
+
+        val dialog = DatePickerDialog(
+            this,
+            { _, year, month, day ->
+                toDate = "$day/${month + 1}/$year"
+                pickToTime()
+            },
+            calendar.get(Calendar.YEAR),
+            calendar.get(Calendar.MONTH),
+            calendar.get(Calendar.DAY_OF_MONTH)
+        )
+        dialog.show()
+    }
+
+    // ---------------- TO TIME ----------------
+
+    private fun pickToTime() {
+        val calendar = Calendar.getInstance()
+
+        val dialog = TimePickerDialog(
+            this,
+            { _, hour, minute ->
+                toTime = String.format("%02d:%02d", hour, minute)
+                showConfirmationDialog()
+            },
+            calendar.get(Calendar.HOUR_OF_DAY),
+            calendar.get(Calendar.MINUTE),
+            true
+        )
+        dialog.show()
+    }
+
+    // ---------------- ALERT DIALOG ----------------
+
+    private fun showConfirmationDialog() {
+        val builder = AlertDialog.Builder(this)
+        builder.setTitle("Confirm Application")
+        builder.setMessage(
+            "From:\nDate: $fromDate\nTime: $fromTime\n\n" +
+                    "To:\nDate: $toDate\nTime: $toTime\n\nProceed?"
+        )
+
+        builder.setPositiveButton("Yes") { dialog, _ ->
+            Toast.makeText(this, "Schedule Confirmed!", Toast.LENGTH_LONG).show()
+            dialog.dismiss()
+        }
+
+        builder.setNegativeButton("No") { dialog, _ ->
+            dialog.dismiss()
+        }
+
+        builder.show()
+    }
+
+    // ---------------- NOTIFICATION ----------------
 
     private fun showNotification() {
         val intent = Intent(this, MainActivity::class.java)
         val pendingIntent = PendingIntent.getActivity(
-            this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT or
-                    PendingIntent.FLAG_IMMUTABLE
+            this, 0, intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
+
         val notification = NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_dialog_alert)
-                .setContentTitle("Notification")
-            .setContentText("You have save the project.")
+            .setContentTitle("Notification")
+            .setContentText("You have saved the project.")
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
             .build()
-        if (ActivityCompat.checkSelfPermission(this,
-                Manifest.permission.POST_NOTIFICATIONS) !=
-            PackageManager.PERMISSION_GRANTED) {
-            return
-        }
-        NotificationManagerCompat.from(this).notify(NOTIFICATION_ID,
-            notification)
+
+        if (ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) != PackageManager.PERMISSION_GRANTED
+        ) return
+
+        NotificationManagerCompat.from(this)
+            .notify(NOTIFICATION_ID, notification)
     }
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val name = "Notification Channel"
-            val descriptionText = "Channel for status notifications"
-            val importance = NotificationManager.IMPORTANCE_HIGH
-            val channel = NotificationChannel(CHANNEL_ID, name,
-                importance).apply {
-                description = descriptionText
+            val channel = NotificationChannel(
+                CHANNEL_ID,
+                "Notification Channel",
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "Channel for status notifications"
             }
-            val notificationManager: NotificationManager =
-                getSystemService(Context.NOTIFICATION_SERVICE) as
-                        NotificationManager
-            notificationManager.createNotificationChannel(channel)
+
+            val manager =
+                getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            manager.createNotificationChannel(channel)
         }
     }
 
-    private fun showAlertDialog(){
-        val builder = AlertDialog.Builder(this)
-        builder.setTitle("Alert")
-        builder.setMessage("Are you sure you want to apply?")
-        builder.setPositiveButton("Yes"){dialog,_->
-            dialog.dismiss()
-        }
-        builder.setNegativeButton("No"){dialog,_->
-            dialog.dismiss()
-        }
-        builder.show()
-    }
+    // ---------------- CONTEXT MENU ----------------
+
     override fun onCreateContextMenu(
         menu: ContextMenu?,
         v: View?,
@@ -147,6 +237,8 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    // ---------------- OPTIONS MENU ----------------
+
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.main_menu, menu)
         return true
@@ -158,13 +250,13 @@ class MainActivity : AppCompatActivity() {
                 startActivity(Intent(this, Profile::class.java))
 
             R.id.settings ->
-                true
+                Toast.makeText(this, "Settings Clicked", Toast.LENGTH_SHORT).show()
 
             R.id.help ->
-                true
+                Toast.makeText(this, "Help Clicked", Toast.LENGTH_SHORT).show()
 
             R.id.logout ->
-                true
+                Toast.makeText(this, "Logged Out", Toast.LENGTH_SHORT).show()
         }
         return true
     }
