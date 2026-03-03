@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
@@ -9,16 +8,26 @@
     android:background="#F3F2FD">
 
     <ImageView
-        android:id="@+id/imageView2"
-        android:layout_width="123dp"
-        android:layout_height="129dp"
+        android:id="@+id/imageView"
+        android:layout_width="154dp"
+        android:layout_height="144dp"
         app:srcCompat="@drawable/logo" />
 
     <EditText
-        android:id="@+id/usernameEditText"
+        android:id="@+id/nameEditText"
         android:layout_width="match_parent"
         android:layout_height="50dp"
-        android:hint="Username/Email"
+        android:hint="Full Name"
+        android:background="@android:color/white"
+        android:padding="10dp"
+        android:layout_marginBottom="15dp"/>
+
+    <EditText
+        android:id="@+id/emailEditText"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:hint="Email"
+        android:inputType="textEmailAddress"
         android:background="@android:color/white"
         android:padding="10dp"
         android:layout_marginBottom="15dp"/>
@@ -33,21 +42,13 @@
         android:padding="10dp"
         android:layout_marginBottom="25dp"/>
 
-    <Button
-        android:id="@+id/loginButton"
-        android:layout_width="match_parent"
-        android:layout_height="55dp"
-        android:text="LOGIN"
-        android:backgroundTint="#FF8B28"
-        android:textColor="#FFFFFF"/>
 
     <Button
         android:id="@+id/registerButton"
         android:layout_width="match_parent"
         android:layout_height="55dp"
-        android:text="CREATE ACCOUNT"
-        android:layout_marginTop="15dp"
-        android:backgroundTint="#1976D2"
-        android:textColor="#FFFFFF"/>
+        android:backgroundTint="#AF8B38"
+        android:text="REGISTER"
+        android:textColor="#FFFFFF" />
 
 </LinearLayout>
