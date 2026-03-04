@@ -1,0 +1,49 @@
+{
+  "project_info": {
+    "project_number": "485839379444",
+    "firebase_url": "https://movie-b44a5-default-rtdb.firebaseio.com",
+    "project_id": "movie-b44a5",
+    "storage_bucket": "movie-b44a5.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:485839379444:android:94047292e48e5b6eb7f7a1",
+        "android_client_info": {
+          "package_name": "com.example.freelancer"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB8DZHO3Qn1ZJaz8nZ6KaUJ2JVk9vguqQE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:485839379444:android:bcdc11d1890eaa3bb7f7a1",
+        "android_client_info": {
+          "package_name": "com.example.movie"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB8DZHO3Qn1ZJaz8nZ6KaUJ2JVk9vguqQE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

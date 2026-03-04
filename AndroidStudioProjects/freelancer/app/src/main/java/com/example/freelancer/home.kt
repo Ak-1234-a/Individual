@@ -17,6 +17,7 @@ import androidx.appcompat.widget.Toolbar
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import com.google.firebase.database.FirebaseDatabase
 import java.util.*
 
 class home : AppCompatActivity() {
@@ -144,7 +145,7 @@ class home : AppCompatActivity() {
         )
 
         builder.setPositiveButton("Yes") { dialog, _ ->
-            Toast.makeText(this, "Schedule Confirmed!", Toast.LENGTH_LONG).show()
+            updateScheduleInFirebase()
             dialog.dismiss()
         }
 
@@ -153,6 +154,32 @@ class home : AppCompatActivity() {
         }
 
         builder.show()
+    }
+
+    private fun updateScheduleInFirebase() {
+        val sharedPref = getSharedPreferences("LoginPref", Context.MODE_PRIVATE)
+        val email = sharedPref.getString("email", "unknown_user") ?: "unknown_user"
+        val sanitizedEmail = email.replace(".", ",")
+
+        val database = FirebaseDatabase.getInstance()
+        val myRef = database.getReference("project_schedules").child(sanitizedEmail)
+
+        val scheduleData = mapOf(
+            "fromDate" to fromDate,
+            "fromTime" to fromTime,
+            "toDate" to toDate,
+            "toTime" to toTime,
+            "timestamp" to System.currentTimeMillis()
+        )
+
+        myRef.setValue(scheduleData)
+            .addOnSuccessListener {
+                Toast.makeText(this, "Schedule Updated in Firebase!", Toast.LENGTH_LONG).show()
+                showNotification()
+            }
+            .addOnFailureListener {
+                Toast.makeText(this, "Failed to update Firebase: ${it.message}", Toast.LENGTH_LONG).show()
+            }
     }
 
     // ---------------- NOTIFICATION ----------------
@@ -167,7 +194,7 @@ class home : AppCompatActivity() {
         val notification = NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_dialog_alert)
             .setContentTitle("Notification")
-            .setContentText("You have saved the project.")
+            .setContentText("Project schedule updated successfully.")
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
@@ -223,8 +250,7 @@ class home : AppCompatActivity() {
             }
 
             R.id.save -> {
-                Toast.makeText(this, "Project Saved", Toast.LENGTH_SHORT).show()
-                showNotification()
+                updateScheduleInFirebase()
                 true
             }
 

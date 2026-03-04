@@ -1,13 +1,12 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.google.services)
 }
 
 android {
     namespace = "com.example.freelancer"
-    compileSdk {
-        version = release(36)
-    }
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.example.freelancer"
@@ -26,6 +25,13 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+        }
+        debug {
+            packaging {
+                jniLibs {
+                    keepDebugSymbols.add("**/*.so")
+                }
+            }
         }
     }
     compileOptions {
@@ -48,4 +54,8 @@ dependencies {
     androidTestImplementation(libs.androidx.espresso.core)
     implementation ("com.google.android.gms:play-services-location:18.0.0")
     implementation("org.osmdroid:osmdroid-android:6.1.16")
+
+    // Firebase
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.database)
 }
