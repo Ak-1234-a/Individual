@@ -5,11 +5,15 @@ import android.app.*
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.media.AudioAttributes
+import android.media.MediaPlayer
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.*
-import android.widget.Button
-import android.widget.Toast
+import android.widget.*
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -30,6 +34,12 @@ class home : AppCompatActivity() {
     private var toDate = ""
     private var toTime = ""
 
+    // Video & Audio variables
+    private var mediaPlayer: MediaPlayer? = null
+    private lateinit var audioSeekBar: SeekBar
+    private val handler = Handler(Looper.getMainLooper())
+    private lateinit var updateSeekBar: Runnable
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -45,6 +55,50 @@ class home : AppCompatActivity() {
             pickFromDate()
         }
 
+        // --- Video Setup ---
+        val videoView = findViewById<VideoView>(R.id.videoView)
+        val btnPlayVideo = findViewById<Button>(R.id.btnPlayVideo)
+
+        // Updated to a tech/project-related sample video (Google Chromecast Brief)
+        val videoUri = Uri.parse("https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4")
+        videoView.setVideoURI(videoUri)
+
+        val mediaController = MediaController(this)
+        mediaController.setAnchorView(videoView)
+        videoView.setMediaController(mediaController)
+
+        btnPlayVideo.setOnClickListener {
+            if (videoView.isPlaying) {
+                videoView.pause()
+                btnPlayVideo.text = "Play Video"
+            } else {
+                videoView.start()
+                btnPlayVideo.text = "Pause Video"
+            }
+        }
+
+        // --- Audio Setup ---
+        val btnPlayAudio = findViewById<ImageButton>(R.id.btnPlayAudio)
+        audioSeekBar = findViewById(R.id.audioSeekBar)
+
+        // Sample Audio: Project Requirements (using a public URL)
+        val audioUrl = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
+
+        btnPlayAudio.setOnClickListener {
+            if (mediaPlayer == null) {
+                setupMediaPlayer(audioUrl, btnPlayAudio)
+            } else {
+                if (mediaPlayer!!.isPlaying) {
+                    mediaPlayer!!.pause()
+                    btnPlayAudio.setImageResource(android.R.drawable.ic_media_play)
+                } else {
+                    mediaPlayer!!.start()
+                    btnPlayAudio.setImageResource(android.R.drawable.ic_media_pause)
+                }
+            }
+        }
+
+        setupSeekBar()
         createNotificationChannel()
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -60,6 +114,53 @@ class home : AppCompatActivity() {
                 )
             }
         }
+    }
+
+    private fun setupMediaPlayer(url: String, playBtn: ImageButton) {
+        mediaPlayer = MediaPlayer().apply {
+            setAudioAttributes(
+                AudioAttributes.Builder()
+                    .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                    .setUsage(AudioAttributes.USAGE_MEDIA)
+                    .build()
+            )
+            setDataSource(url)
+            prepareAsync()
+            setOnPreparedListener {
+                start()
+                playBtn.setImageResource(android.R.drawable.ic_media_pause)
+                audioSeekBar.max = duration
+                handler.postDelayed(updateSeekBar, 1000)
+            }
+            setOnCompletionListener {
+                playBtn.setImageResource(android.R.drawable.ic_media_play)
+                audioSeekBar.progress = 0
+            }
+        }
+    }
+
+    private fun setupSeekBar() {
+        updateSeekBar = Runnable {
+            mediaPlayer?.let {
+                audioSeekBar.progress = it.currentPosition
+                handler.postDelayed(updateSeekBar, 1000)
+            }
+        }
+
+        audioSeekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                if (fromUser) mediaPlayer?.seekTo(progress)
+            }
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+        })
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        mediaPlayer?.release()
+        mediaPlayer = null
+        handler.removeCallbacks(updateSeekBar)
     }
 
     // ---------------- FROM DATE ----------------
