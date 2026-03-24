@@ -18,6 +18,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
+import androidx.cardview.widget.CardView
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -48,18 +49,45 @@ class home : AppCompatActivity() {
         val toolbar = findViewById<Toolbar>(R.id.toolbar)
         setSupportActionBar(toolbar)
 
+        val projectCard = findViewById<CardView>(R.id.projectCard)
+        
+        // Simple scale animation on home page load
+        projectCard.scaleX = 0.5f
+        projectCard.scaleY = 0.5f
+        projectCard.alpha = 0f
+        
+        projectCard.animate()
+            .scaleX(1f)
+            .scaleY(1f)
+            .alpha(1f)
+            .setDuration(800)
+            .setInterpolator(android.view.animation.OvershootInterpolator())
+            .start()
+
         val btnWork = findViewById<Button>(R.id.btnWork)
         registerForContextMenu(btnWork)
 
         btnWork.setOnClickListener {
-            pickFromDate()
+            // Animation for the button click
+            it.animate()
+                .scaleX(1.1f)
+                .scaleY(1.1f)
+                .setDuration(150)
+                .withEndAction {
+                    it.animate()
+                        .scaleX(1f)
+                        .scaleY(1f)
+                        .setDuration(150)
+                        .start()
+                    pickFromDate()
+                }
+                .start()
         }
 
         // --- Video Setup ---
         val videoView = findViewById<VideoView>(R.id.videoView)
         val btnPlayVideo = findViewById<Button>(R.id.btnPlayVideo)
 
-        // Updated to a tech/project-related sample video (Google Chromecast Brief)
         val videoUri = Uri.parse("https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4")
         videoView.setVideoURI(videoUri)
 
@@ -81,7 +109,6 @@ class home : AppCompatActivity() {
         val btnPlayAudio = findViewById<ImageButton>(R.id.btnPlayAudio)
         audioSeekBar = findViewById(R.id.audioSeekBar)
 
-        // Sample Audio: Project Requirements (using a public URL)
         val audioUrl = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
 
         btnPlayAudio.setOnClickListener {
