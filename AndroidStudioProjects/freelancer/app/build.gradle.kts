@@ -58,4 +58,7 @@ dependencies {
     // Firebase
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.database)
+
+    // AdMob
+    implementation(libs.play.services.ads)
 }

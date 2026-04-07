@@ -12,6 +12,7 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.text.util.Linkify
 import android.view.*
 import android.widget.*
 import androidx.activity.enableEdgeToEdge
@@ -22,7 +23,14 @@ import androidx.cardview.widget.CardView
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import com.google.android.gms.ads.AdRequest
+import com.google.android.gms.ads.AdView
+import com.google.android.gms.ads.MobileAds
 import com.google.firebase.database.FirebaseDatabase
+import org.xmlpull.v1.XmlPullParser
+import org.xmlpull.v1.XmlPullParserFactory
+import java.net.HttpURLConnection
+import java.net.URL
 import java.util.*
 
 class home : AppCompatActivity() {
@@ -41,10 +49,18 @@ class home : AppCompatActivity() {
     private val handler = Handler(Looper.getMainLooper())
     private lateinit var updateSeekBar: Runnable
 
+    private lateinit var adView: AdView
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_home)
+
+        // Initialize AdMob
+        MobileAds.initialize(this) {}
+        adView = findViewById(R.id.adView)
+        val adRequest = AdRequest.Builder().build()
+        adView.loadAd(adRequest)
 
         val toolbar = findViewById<Toolbar>(R.id.toolbar)
         setSupportActionBar(toolbar)
@@ -64,7 +80,13 @@ class home : AppCompatActivity() {
             .setInterpolator(android.view.animation.OvershootInterpolator())
             .start()
 
+        val tvProjectDescription = findViewById<TextView>(R.id.tvProjectDescription)
+        // Applying Linkify to project description
+        tvProjectDescription.text = "Need a simple freelancer app. Visit https://freelancer.com for details or contact project-lead@example.com"
+        Linkify.addLinks(tvProjectDescription, Linkify.ALL)
+
         val btnWork = findViewById<Button>(R.id.btnWork)
+        val btnShare = findViewById<Button>(R.id.btnShare)
         registerForContextMenu(btnWork)
 
         btnWork.setOnClickListener {
@@ -82,6 +104,10 @@ class home : AppCompatActivity() {
                     pickFromDate()
                 }
                 .start()
+        }
+
+        btnShare.setOnClickListener {
+            shareProjectDetails()
         }
 
         // --- Video Setup ---
@@ -141,6 +167,97 @@ class home : AppCompatActivity() {
                 )
             }
         }
+
+        // Show RSS News Popup immediately
+        fetchRSSNews()
+    }
+
+    private fun shareProjectDetails() {
+        val title = findViewById<TextView>(R.id.tvProjectTitle).text.toString()
+        val desc = findViewById<TextView>(R.id.tvProjectDescription).text.toString()
+        val budget = findViewById<TextView>(R.id.tvBudget).text.toString()
+
+        val shareText = "Project: $title\nDescription: $desc\nBudget: $budget\n\nShared via Freelancer App"
+
+        val sendIntent: Intent = Intent().apply {
+            action = Intent.ACTION_SEND
+            putExtra(Intent.EXTRA_TEXT, shareText)
+            type = "text/plain"
+        }
+
+        val shareIntent = Intent.createChooser(sendIntent, "Share Project via")
+        startActivity(shareIntent)
+    }
+
+    private fun fetchRSSNews() {
+        Toast.makeText(this, "Fetching Freelancer News...", Toast.LENGTH_SHORT).show()
+        Thread {
+            val newsItems = StringBuilder()
+            try {
+                // Try fetching live news
+                val url = URL("https://www.computerworld.com/index.rss")
+                val connection = url.openConnection() as HttpURLConnection
+                connection.connectTimeout = 5000 // 5 seconds timeout
+                connection.readTimeout = 5000
+                
+                val inputStream = connection.inputStream
+                val factory = XmlPullParserFactory.newInstance()
+                val parser = factory.newPullParser()
+                parser.setInput(inputStream, null)
+                
+                var eventType = parser.eventType
+                var currentTitle = ""
+                var itemCount = 0
+                
+                while (eventType != XmlPullParser.END_DOCUMENT && itemCount < 5) {
+                    val name = parser.name
+                    when (eventType) {
+                        XmlPullParser.START_TAG -> {
+                            if (name == "title") {
+                                currentTitle = parser.nextText()
+                            }
+                        }
+                        XmlPullParser.END_TAG -> {
+                            if (name == "item") {
+                                newsItems.append("• $currentTitle\n\n")
+                                itemCount++
+                            }
+                        }
+                    }
+                    eventType = parser.next()
+                }
+            } catch (e: Exception) {
+                // If network fails, use Mock News related to Freelancer App
+                newsItems.setLength(0) // Clear any partial data
+                newsItems.append("• New high-budget Android projects available today!\n\n")
+                newsItems.append("• Top skills in demand: Kotlin, Firebase, and Jetpack Compose.\n\n")
+                newsItems.append("• Freelancer payment system updated for faster withdrawals.\n\n")
+                newsItems.append("• Join the weekly webinar on 'How to land your first client'.\n\n")
+                newsItems.append("• Support: New live chat feature launched for users.")
+            }
+            
+            runOnUiThread {
+                if (newsItems.isNotEmpty()) {
+                    showNewsPopup(newsItems.toString())
+                }
+            }
+        }.start()
+    }
+
+    private fun showNewsPopup(news: String) {
+        if (isFinishing) return // Prevent crash if user closed the app quickly
+
+        val builder = AlertDialog.Builder(this)
+        builder.setTitle("Latest Freelancer News")
+        val message = TextView(this)
+        message.text = news
+        message.setPadding(50, 40, 50, 40)
+        message.textSize = 15f
+        Linkify.addLinks(message, Linkify.ALL)
+        builder.setView(message)
+        builder.setPositiveButton("Awesome") { dialog, _ -> dialog.dismiss() }
+        builder.setCancelable(false) // User must click Awesome to close
+        builder.show()
     }
 
     private fun setupMediaPlayer(url: String, playBtn: ImageButton) {
@@ -183,7 +300,18 @@ class home : AppCompatActivity() {
         })
     }
 
+    override fun onPause() {
+        adView.pause()
+        super.onPause()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        adView.resume()
+    }
+
     override fun onDestroy() {
+        adView.destroy()
         super.onDestroy()
         mediaPlayer?.release()
         mediaPlayer = null
@@ -404,10 +532,10 @@ class home : AppCompatActivity() {
                 startActivity(Intent(this, Profile::class.java))
 
             R.id.settings ->
-                Toast.makeText(this, "Settings Clicked", Toast.LENGTH_SHORT).show()
+                showSupportPopup()
 
             R.id.help ->
-                Toast.makeText(this, "Help Clicked", Toast.LENGTH_SHORT).show()
+                startActivity(Intent(this, HelpActivity::class.java))
 
             R.id.logout ->{
                 // Clear SharedPreferences
@@ -425,5 +553,19 @@ class home : AppCompatActivity() {
             }
         }
         return true
+    }
+
+    private fun showSupportPopup() {
+        val message = TextView(this)
+        message.setPadding(50, 20, 50, 20)
+        message.text = "Freelancer App Support\n\nWebsite: https://www.freelancer-app.com\nEmail: support@freelancer.com\nPhone: +1-800-555-0199"
+        message.textSize = 16f
+        Linkify.addLinks(message, Linkify.ALL)
+
+        val builder = AlertDialog.Builder(this)
+        builder.setTitle("App Support Information")
+        builder.setView(message)
+        builder.setPositiveButton("Close") { dialog, _ -> dialog.dismiss() }
+        builder.show()
     }
 }
